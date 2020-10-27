@@ -1,0 +1,5 @@
+
+/.vs/
+*.cmake
+/module-1/homework/BigInteger/out/
+/module-1/homework/List/.vs/
