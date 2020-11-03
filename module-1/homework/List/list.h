@@ -57,8 +57,7 @@ namespace task {
         void unique();
         void sort();
 
-        friend std::ostream& operator<<(std::ostream& out, const list lst);
-
+    private:
         iterator* first, * last;
 
     };

@@ -190,9 +190,10 @@ void task::list::swap(list& other) {
 }
 
 void task::list::remove(const int& value) {
+    int delete_value = value;
     iterator* cur = last->prev, * tmp;
     while (cur != nullptr) {
-        if (cur->value == value) {
+        if (cur->value == delete_value) {
             cur->next->prev = cur->prev;
             if (cur->prev != nullptr) {
                 cur->prev->next = cur->next;
@@ -241,15 +242,4 @@ void task::list::sort() {
             cur = cur->prev;
         }
     }
-}
-
-std::ostream& task::operator<<(std::ostream& out, const list lst) {
-    out << lst.length << '\n';
-    task::list::iterator* cur = lst.first;
-    while (cur != nullptr && cur != lst.last) {
-        out << cur->value << ' ';
-        cur = cur->next;
-    }
-    out << '\n';
-    return out;
 }
