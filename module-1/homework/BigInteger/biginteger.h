@@ -25,6 +25,7 @@ public:
     BigInteger& operator/=(BigInteger const& other);
     BigInteger operator%(BigInteger const& other) const;
     BigInteger& operator%=(BigInteger const& other);
+    
     BigInteger operator-() const;
 
     BigInteger& operator++();
@@ -43,6 +44,6 @@ public:
     void change_sign();
     operator bool();
 
-    friend std::istream& operator>>(std::istream & in, BigInteger& number);
+    friend std::istream& operator>>(std::istream& in, BigInteger& number);
     friend std::ostream& operator<<(std::ostream& out, BigInteger const& number);
 };

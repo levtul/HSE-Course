@@ -150,21 +150,63 @@ BigInteger& BigInteger::operator*=(BigInteger const& other)  {
 	return *this;
 }
 BigInteger BigInteger::operator/(int other) const {
-    
+	BigInteger result;
+	if (*this == 0) {
+		return result;
+	}
+	result.blocks.pop_back();
+	unsigned long long overflow = 0;
+    for (size_t i = 0; i < blocks.size(); i++) {
+		size_t block_num = blocks.size() - i - 1;
+		int block = blocks[block_num];
+		result.blocks.push_back((block + overflow)/other);
+		overflow = ((block + overflow) % other) * mod;
+	}
+	for (size_t i = 0; i < result.blocks.size() / 2; i++){
+		std::swap(result.blocks[i], result.blocks[result.blocks.size() - i - 1]);
+	}
+	if (result.blocks.back() == 0 && result.blocks.size() != 1) {
+		result.blocks.pop_back();
+	}
+	if (negative != (other < 0)) {
+		result++;
+		result.negative = 1;
+	}
+	return result;
 }
 BigInteger BigInteger::operator/(BigInteger const& other) const {
-    return BigInteger(); 
+    BigInteger result;
+	if (*this == 0) {
+		return result;
+	}
+	BigInteger l = 0, r = *this;
+	while(r - l > BigInteger(1)) {
+		BigInteger m = (r + l) / 2;
+		BigInteger mul = m * other;
+		if (mul > *this) {
+			r = m;
+		}
+		else {
+			l = m;
+		}
+	}
+	result = l;
+	if (negative != other.negative) {
+		result++;
+		result.negative = 1;
+	}
+	return result;
 }
 BigInteger& BigInteger::operator/=(BigInteger const& other) {
-    BigInteger a;
-    return a;
+    *this = *this / other;
+    return *this;
 }
 BigInteger BigInteger::operator%(BigInteger const& other) const {
-    return BigInteger();
+    return *this - *this / other * other;
 }
 BigInteger& BigInteger::operator%=(BigInteger const& other) {
-    BigInteger a;
-    return a;
+    *this = *this - *this / other * other;
+    return *this;
 }
 
 BigInteger BigInteger::operator-() const {
@@ -174,12 +216,12 @@ BigInteger BigInteger::operator-() const {
 }
 
 BigInteger& BigInteger::operator++() {
-	*this = *this + BigInteger(1);
+	*this += 1;
 	return *this;
 }
 BigInteger BigInteger::operator++(int) {
 	BigInteger other(*this);
-	(*this)++;
+	(*this) += 1;
 	return other;
 }
 BigInteger& BigInteger::operator--() {
@@ -261,12 +303,10 @@ std::string BigInteger::toString() const {
 	}
 	return res;
 }
-
 void BigInteger::change_sign() {
 	if (blocks.size() == 1 && blocks[0] == 0) return;
 	negative = !negative;
 }
-
 BigInteger::operator bool() {
 	return (*this != BigInteger(0));
 }
@@ -281,7 +321,3 @@ std::ostream& operator<<(std::ostream& out, BigInteger const& number) {
 	out << number.toString();
 	return out;
 }
-
-// . .. .... ........ ................ . .. .... ........ .................
-// O(log_2(n) + log_2(n/2) + log_2(n/4) + ... log_2(1))
-// O(log_2(n^))
