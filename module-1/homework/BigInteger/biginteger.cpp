@@ -22,6 +22,11 @@ BigInteger::BigInteger(BigInteger const &other) {
 }
 BigInteger::BigInteger(const std::string &str) {
 	std::string number = str;
+	if (number.size() == 0) {
+		blocks.push_back(0);
+		negative = 0;
+		return;
+	}
 	negative = 0;
 	if (number[0] == '-' && (str.size() != 2 || str[1]!='0')) {
 		negative = 1;
