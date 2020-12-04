@@ -42,86 +42,107 @@ BigInteger::BigInteger(const std::string &str) {
 }
 
 BigInteger BigInteger::operator+(BigInteger const& other) const {
+	BigInteger result(*this);
+	return result += other;
+}
+BigInteger& BigInteger::operator+=(BigInteger const& other) {
 	if (negative && !other.negative) {
-		return other - *this;
+		this->change_sign();
+		return *this += other;
 	}
 	else if (!negative && other.negative) {
-		return *this - other;
+		return *this -= other;
 	}
-	BigInteger result;
-	bool change = 0;
-	if (negative && other.negative) {
-		change = 1;
-	}
-	result.blocks.pop_back();
+	bool change = negative && other.negative;
 	size_t min = (blocks.size() < other.blocks.size() ? blocks.size() : other.blocks.size());
 	size_t max = (blocks.size() > other.blocks.size() ? blocks.size() : other.blocks.size());
-	int overflow = 0;
+	int overflow = 0, old_overflow = 0;
 	for (size_t i = 0; i < min; i++) {
-		result.blocks.push_back((blocks[i] + other.blocks[i] + overflow) % mod);
+		old_overflow = overflow;
 		overflow = (blocks[i] + other.blocks[i] + overflow) / mod;
+		blocks[i] = (blocks[i] + other.blocks[i] + old_overflow) % mod;
 	}
 	if (blocks.size() == max) {
 		for (size_t i = min; i < max; i++) {
-			result.blocks.push_back((blocks[i] + overflow) % mod);
+			old_overflow = overflow;
 			overflow = (blocks[i] + overflow) / mod;
+			blocks[i] = (blocks[i] + old_overflow) % mod;
 		}
 	}
 	else {
 		for (size_t i = min; i < max; i++) {
-			result.blocks.push_back((other.blocks[i] + overflow) % mod);
+			old_overflow = overflow;
 			overflow = (other.blocks[i] + overflow) / mod;
+			blocks.push_back((other.blocks[i] + old_overflow) % mod);
 		}
 	}
 	if (overflow) {
-		result.blocks.push_back(overflow);
+		blocks.push_back(overflow);
 	}
 	if (change) {
-		result.change_sign();
+		change_sign();
 	}
-	return result;
-}
-BigInteger& BigInteger::operator+=(BigInteger const& other) {
-	*this = *this + other;
 	return *this;
 }
 BigInteger BigInteger::operator-(BigInteger const& other) const {
-	if (negative && !other.negative) {
-		return (-*this) + (-other);
-	}
-	else if (!negative && other.negative) {
-		return *this + (-other);
-	}
-	if (negative && other.negative) {
-		return other - (*this);
-	}
-	BigInteger result;
-	if (*this < other) {
-		return -(other - *this);
-	}
-	result.blocks.pop_back();
-	int min = (blocks.size() < other.blocks.size() ? blocks.size() : other.blocks.size());
-	int max = (blocks.size() > other.blocks.size() ? blocks.size() : other.blocks.size());
-	int overflow = 0;
-	for (int i = 0; i < min; i++) {
-		result.blocks.push_back((blocks[i] - other.blocks[i] - overflow + mod) % mod);
-		overflow = (((long long)blocks[i] - overflow) < (long long) other.blocks[i]);
-	}
-	if (blocks.size() == max) {
-		for (int i = min; i < max; i++) {
-			result.blocks.push_back((blocks[i] - overflow + mod) % mod);
-			overflow = ((long long) blocks[i] - overflow < 0);
-		}
-	}
-	if (result.blocks.size() > 1 && result.blocks.back() == 0) {
-		while (result.blocks.back() == 0) {
-			result.blocks.pop_back();
-		}
-	}
-	return result;
+	BigInteger result(*this);
+	return result -= other;
 }
 BigInteger& BigInteger::operator-=(BigInteger const& other) {
-	*this = *this - other;
+	if (negative && !other.negative) {
+		change_sign();
+		(*this += other).change_sign();
+		return *this;
+	}
+	else if (!negative && other.negative) {
+		return *this += (-other);
+	}
+	bool change = negative;
+	bool geq = (change ? change_sign(), *this : *this) >= (other.negative ? -other : other);
+	if (change) {
+		change_sign();
+	}
+	change = negative && other.negative;
+	size_t min = (blocks.size() < other.blocks.size() ? blocks.size() : other.blocks.size());
+	size_t max = (blocks.size() > other.blocks.size() ? blocks.size() : other.blocks.size());
+	int overflow = 0, old_overflow = 0;
+	if (geq) {
+		for (size_t i = 0; i < min; i++) {
+			old_overflow = overflow;
+			overflow = ((long long)blocks[i] - other.blocks[i] - old_overflow < 0);
+			blocks[i] = (blocks[i] + mod - other.blocks[i] - old_overflow) % mod;
+		}
+		for (size_t i = min; i < max; i++) {
+			old_overflow = overflow;
+			overflow = ((long long)blocks[i] - overflow < 0);
+			blocks[i] = (blocks[i] + mod - old_overflow) % mod;
+		}
+		if (blocks.size() > 1 && blocks.back() == 0) {
+			while (blocks.back() == 0) {
+				blocks.pop_back();
+			}
+		}
+	} else {
+		for (size_t i = 0; i < min; i++) {
+			old_overflow = overflow;
+			overflow = ((long long)other.blocks[i] - blocks[i] - old_overflow < 0);
+			blocks[i] = (other.blocks[i] + mod - blocks[i] - old_overflow) % mod;
+		}
+		for (size_t i = min; i < max; i++) {
+			old_overflow = overflow;
+			overflow = ((long long)other.blocks[i] - old_overflow < 0);
+			blocks[i] = (other.blocks[i] + mod - old_overflow) % mod;
+		}
+		if (blocks.size() > 1 && blocks.back() == 0) {
+			while (blocks.back() == 0) {
+				blocks.pop_back();
+			}
+		}
+		change_sign();
+	}
+	if (change) {
+		change_sign();
+	}
 	return *this;
 }
 BigInteger BigInteger::operator*(BigInteger const& other) const {
@@ -230,12 +251,12 @@ BigInteger BigInteger::operator++(int) {
 	return other;
 }
 BigInteger& BigInteger::operator--() {
-	*this = *this - BigInteger(1);
+	*this -= 1;
 	return *this;
 }
 BigInteger BigInteger::operator--(int) {
 	BigInteger other(*this);
-	(*this)--;
+	*this -= 1;
 	return other;
 }
 
@@ -315,7 +336,9 @@ void BigInteger::change_sign() {
 BigInteger::operator bool() {
 	return (*this != BigInteger(0));
 }
-
+bool BigInteger::is_negative() const {
+	return negative;
+}
 std::istream& operator>>(std::istream& in, BigInteger& number) {
 	std::string str;
 	in >> str;

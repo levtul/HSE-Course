@@ -5,10 +5,10 @@
 #include <iostream>
 
 class BigInteger {
-public:
+private:
     std::vector<unsigned long long> blocks;
     bool negative;
-
+public:
     BigInteger();
     BigInteger(int value);
     BigInteger(BigInteger const& other);
@@ -42,6 +42,7 @@ public:
 
     std::string toString() const;
     void change_sign();
+    bool is_negative() const;
     operator bool();
 
     friend std::istream& operator>>(std::istream& in, BigInteger& number);
